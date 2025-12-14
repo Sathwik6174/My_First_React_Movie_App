@@ -30,6 +30,7 @@ const App = () => {
     const [movieList, setMovieList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [trendingMovies, setTrendingMovies] = useState([]);
+    const [isTrendingLoading, setIsTrendingLoading] = useState(true)
 
     // Use custom debounce hook
     const debouncedSearchTerm = useDebounceValue(searchTerm, 500);
@@ -66,6 +67,8 @@ const App = () => {
 
             if (query && data.results.length > 0) {
                 await updateSearchCount(query, data.results[0]);
+                //Reload trending movies section after each search to display updated trends
+                loadTrendingMovies();
             }
 
         } catch (error) {
@@ -77,11 +80,14 @@ const App = () => {
     }
 
     const loadTrendingMovies = async () => {
+        setIsTrendingLoading(true);
         try {
             const movies = await getTrendingMovies();
             setTrendingMovies(movies)
         } catch (error) {
             console.error(`Error fetching trending movies: ${error}`);
+        } finally {
+            setIsTrendingLoading(false);
         }
     }
 
@@ -103,26 +109,27 @@ const App = () => {
                     <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm}/>
                 </header>
 
-                {trendingMovies.length > 0 && (
-                    <section className="trending">
-                        <h2>Trending Movies</h2>
-
+                <section className='trending'>
+                    <h2>Trending Movies</h2>
+                    {isTrendingLoading ? (
+                        <div styles={{display: 'flex', justifyContent: 'center', padding: '40px'}}>
+                            <Spinner/>
+                        </div>
+                    ) : trendingMovies.length > 0 ? (
                         <ul>
                             {trendingMovies.map((movie, index) => (
                                 <li key={movie.$id}>
-                                    <p>
-                                        {/*//since index by default starts with 0*/}
-                                        {index+1}
-                                    </p>
-                                    <img src={movie.poster_url} alt={movie.title} />
+                                    <p>{index + 1}</p>
+                                    <img src={movie.poster_url} alt={movie.title}/>
                                 </li>
                             ))}
                         </ul>
-                    </section>
-                )}
+                    ) : (
+                        <p className="text-gray-400">No trending movies yet. Start searching!</p>
+                    )}
+                </section>
 
                 <section className="all-movies">
-                    {/*<h2 className="mt-[40px]">All Movies</h2>*/}
                     <h2>All Movies</h2>
                     {isLoading ? (
                         <Spinner/>
