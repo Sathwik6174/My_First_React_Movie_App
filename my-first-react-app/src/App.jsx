@@ -4,16 +4,8 @@ import Spinner from "./Components/Spinner.jsx";
 import MovieCard from "./Components/MovieCard.jsx";
 import {getTrendingMovies, updateSearchCount} from "./appwrite.js";
 
-const API_BASE_URL = 'https://api.themoviedb.org/3';
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-
-const API_OPTIONS = {
-    method: 'GET',
-    headers: {
-        accept: 'application/json',
-        Authorization: `Bearer ${API_KEY}`
-    }
-}
+// Use your Cloudflare Worker URL instead of direct TMDB API
+const PROXY_URL = 'https://tmdb-proxy.sathwikpilla2006.workers.dev/'; // Replace with your actual worker URL
 
 // Custom debounce hook
 const useDebounceValue = (value, delay) => {
@@ -37,7 +29,7 @@ const App = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [movieList, setMovieList] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [trendingMovies, setTrendingMovies] = useState('');
+    const [trendingMovies, setTrendingMovies] = useState([]);
 
     // Use custom debounce hook
     const debouncedSearchTerm = useDebounceValue(searchTerm, 500);
@@ -47,11 +39,16 @@ const App = () => {
         setErrorMessage('')
 
         try {
-            const endpoint = query
-                ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-                : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+            // Call through proxy instead of direct TMDB API
+            const path = query
+                ? '/search/movie'
+                : '/discover/movie?sort_by=popularity.desc';
 
-            const response = await fetch(endpoint, API_OPTIONS);
+            const endpoint = query
+                ? `${PROXY_URL}?path=${encodeURIComponent(path)}&query=${encodeURIComponent(query)}`
+                : `${PROXY_URL}?path=${encodeURIComponent(path)}`;
+
+            const response = await fetch(endpoint);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch movies.');
@@ -113,16 +110,16 @@ const App = () => {
                         <ul>
                             {trendingMovies.map((movie, index) => (
                                 <li key={movie.$id}>
-                            <p>
-                                {/*//since index by default starts with 0*/}
-                                {index+1}
-                            </p>
+                                    <p>
+                                        {/*//since index by default starts with 0*/}
+                                        {index+1}
+                                    </p>
                                     <img src={movie.poster_url} alt={movie.title} />
-                        </li>
-                        ))}
-                    </ul>
+                                </li>
+                            ))}
+                        </ul>
                     </section>
-                    )}
+                )}
 
                 <section className="all-movies">
                     {/*<h2 className="mt-[40px]">All Movies</h2>*/}
